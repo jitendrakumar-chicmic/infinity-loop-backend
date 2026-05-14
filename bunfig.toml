@@ -1,0 +1,15 @@
+[install]
+# Use npm registry
+registry = "https://registry.npmjs.org"
+
+[install.cache]
+# Enable cache
+dir = "~/.bun/install/cache"
+
+[run]
+# Bun runtime settings
+bun = true
+
+[test]
+# Test configuration
+preload = []

@@ -1,0 +1,222 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Level {
+  id                    String                 @id @default(uuid())
+  name                  String
+  isDemo                Boolean                @default(false) @map("is_demo")
+  createdAt             DateTime               @default(now()) @map("created_at")
+  updatedAt             DateTime               @updatedAt @map("updated_at")
+  isDeleted             Boolean                @default(false) @map("is_deleted")
+  deletedAt             DateTime?              @map("deleted_at")
+  boards            Board[]
+  stageLevelConfigs StageLevelConfig[]
+
+  @@index([isDeleted])
+  @@map("levels")
+}
+
+model Board {
+  id            String             @id @default(uuid())
+  levelId       String             @map("level_id")
+  name          String?
+  gridX         Int                @map("grid_x")
+  gridY         Int                @map("grid_y")
+  grid          Json               @map("grid")
+  timeLimit     Int                @default(120) @map("time_limit")
+  color         String?            @map("color")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+  isDeleted         Boolean            @default(false) @map("is_deleted")
+  deletedAt     DateTime?          @map("deleted_at")
+  level         Level              @relation(fields: [levelId], references: [id])
+  sessionBoards    GameSessionBoard[]
+  gameSessions     GameSession[]
+  stageLevelBoards StageLevelBoard[]
+
+  @@index([levelId, isDeleted])
+  @@map("boards")
+}
+
+
+model GameConfig {
+  id                 String    @id @default(uuid())
+  title              String?
+  description        String?
+  backgroundSoundUrl String?   @map("background_sound_url")
+  tapSoundUrl        String?   @map("tap_sound_url")
+  activeLevelId      String?   @map("active_level_id")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  isDeleted          Boolean   @default(false) @map("is_deleted")
+  deletedAt          DateTime? @map("deleted_at")
+  updatedBy          String?   @map("updated_by")
+
+  @@map("game_config")
+}
+
+model GameSession {
+  id           String            @id @default(uuid())
+
+  userId       String            @map("user_id")
+  stageId      String?           @map("stage_id")
+  boardId      String            @map("board_id")
+  status       Int               @default(1) @map("status")
+  score        Int?
+  currentGrid  Json              @map("current_grid")
+  moveCount    Int               @default(0) @map("move_count")
+  isCheating   Boolean           @default(false) @map("is_cheating")
+  cheatingReason String?         @map("cheating_reason")
+  totalScore   Int               @default(0) @map("total_score")
+  totalMoves   Int               @default(0) @map("total_moves")
+  totalTimeSec Int               @default(0) @map("total_time_sec")
+  terminationReason String?      @map("termination_reason")
+  startedAt    DateTime          @default(now()) @map("started_at")
+  endedAt      DateTime?         @map("ended_at")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+  isDeleted    Boolean           @default(false) @map("is_deleted")
+  deletedAt    DateTime?         @map("deleted_at")
+  moves        GameMove[]
+  sessionBoards GameSessionBoard[]
+  board        Board             @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+
+
+  @@index([userId, stageId, status])
+  @@index([userId])
+  @@index([status])
+  @@index([boardId, isDeleted])
+  @@map("game_sessions")
+}
+
+model GameSessionBoard {
+  id           String      @id @default(uuid())
+  sessionId    String      @map("session_id")
+  boardId      String      @map("board_id")
+  levelId      String      @map("level_id")
+  gridX        Int         @map("grid_x")
+  gridY        Int         @map("grid_y")
+  timeLimit    Int         @map("time_limit")
+  color        String?     @map("color")
+  originalGrid Json        @map("original_grid")
+  scrambledGrid Json       @map("scrambled_grid")
+  score        Int         @default(0)
+  moveCount    Int         @default(0) @map("move_count")
+  durationSec  Int         @default(0) @map("duration_sec")
+  isSolved     Boolean     @default(false) @map("is_solved")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+  isDeleted         Boolean            @default(false) @map("is_deleted")
+  deletedAt    DateTime?   @map("deleted_at")
+  board        Board       @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  session      GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+
+  @@map("game_session_boards")
+}
+
+model StageConfig {
+  id         String               @id @default(uuid())
+  stageId    String               @map("stage_id")
+  timeLimit  Int                  @map("time_limit")
+  enableDemo Boolean              @default(false) @map("enable_demo")
+  isEnabled  Boolean              @default(true)  @map("is_enabled")
+  createdAt  DateTime             @default(now()) @map("created_at")
+  updatedAt  DateTime             @updatedAt @map("updated_at")
+  isDeleted  Boolean              @default(false) @map("is_deleted")
+  deletedAt  DateTime?            @map("deleted_at")
+  levels     StageLevelConfig[]
+
+  @@index([stageId, isDeleted])
+  @@map("stage_configs")
+}
+
+model StageLevelConfig {
+  id            String           @id @default(uuid())
+  stageConfigId String           @map("stage_config_id")
+  levelId       String           @map("level_id")
+  boardCount    Int              @map("board_count")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+  isDeleted     Boolean          @default(false) @map("is_deleted")
+  deletedAt     DateTime?        @map("deleted_at")
+  level         Level            @relation(fields: [levelId], references: [id])
+  stageConfig   StageConfig      @relation(fields: [stageConfigId], references: [id])
+  stageLevelBoards StageLevelBoard[]
+
+  @@index([levelId, isDeleted])
+  @@map("stage_level_configs")
+}
+
+
+model StageLevelBoard {
+  id                 String           @id @default(uuid())
+  stageLevelConfigId String           @map("stage_level_config_id")
+  stageLevelConfig   StageLevelConfig @relation(fields: [stageLevelConfigId], references: [id], onDelete: Cascade)
+  boardId            String           @map("board_id")
+  board              Board            @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  sortOrder          Int              @default(0) @map("sort_order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  @@index([stageLevelConfigId, sortOrder])
+  @@map("stage_level_boards")
+}
+
+
+model GameMove {
+  id        String      @id @default(uuid())
+  sessionId String      @map("session_id")
+  boardId   String      @map("board_id")
+  x         Int
+  y         Int
+  success   Boolean
+  clickedAt DateTime    @default(now()) @map("clicked_at")
+  session   GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+
+  @@index([sessionId, clickedAt])
+  @@index([boardId])
+  @@map("game_moves")
+}
+
+
+model CheatFlag {
+  id             String      @id @default(uuid())
+  userId         String      @map("user_id")
+  sessionId      String      @map("session_id")
+  sessionBoardId String?     @map("session_board_id")
+  flagType       Int         @map("flag_type")
+  evidence       Json        @map("evidence")
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([sessionId])
+  @@map("cheat_flags")
+}
+
+model UserStageProgress {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  stageId   String    @map("stage_id")
+  score     Int       @default(0)
+  boardsCompleted Int @default(0) @map("boards_completed")
+  status    Int       @default(0) @map("status") // 0: IN_PROGRESS, 1: COMPLETED, 2: FAILED/TIMEOUT
+  startedAt DateTime  @default(now()) @map("started_at")
+  endedAt   DateTime? @map("ended_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@unique([userId, stageId])
+  @@index([userId])
+  @@map("user_stage_progress")
+}
+
